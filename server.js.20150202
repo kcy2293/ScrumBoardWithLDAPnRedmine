@@ -1,0 +1,277 @@
+/*************************
+ * SYSTEM INCLUDES
+ *************************/
+var express = require('express');
+var session = require('express-session');
+var path = require('path');
+var http = require('http');
+var ldapAuth = require('ldapauth');
+var cookieParser = require('cookie-parser');
+var bodyParser = require('body-parser');
+var Redmine = require('promised-redmine');
+var async = require('async');
+var favicon = require('serve-favicon');
+var	data	= require('./lib/data.js').db;
+var rStaticInfo = require('./lib/redmineStaticInfo.js');
+
+/*************************
+ * GLOBALS
+ *************************/
+var LDAP_ADMIN_DN = 'uid=admin,ou=people,dc=ust21,dc=co,dc=kr';
+var LDAP_ADMIN_PW = '8898865i';
+var LDAP_URL = 'ldap://mail.ust21.co.kr:389';
+var LDAP_BASE = 'ou=people,dc=ust21,dc=co,dc=kr';
+var SESSION_KEY = 'ust21_scrumblr';
+var session_info = {
+  //'store': new express.session.MemoryStore(),
+  'saveUninitialized': true,
+  'resave': false,
+  'secret': '8898865',
+  'key': SESSION_KEY
+};
+var REDMINE_HOST = '192.168.0.181';
+var REDMINE_APIKEY = '0c0329fc7c806d4634cc7cee9d3da646d5d5f19a';
+
+/*************************
+ * SETUP EXPRESS
+ *************************/
+var app = express();
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+app.use(favicon(__dirname + '/public/images/scrum_favicon.ico'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser('test'));
+app.use(session(session_info));
+app.use(express.static(path.join(__dirname, 'lib')));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// production error handler
+// no stacktraces leaked to user
+app.use(function(err, req, res, next) {
+    res.status(err.status || 500);
+    res.render('error', {
+        message: err.message,
+        error: {}
+    });
+});
+
+var server = http.Server(app);
+var port = process.argv[2] || 3100;
+server.listen(port, function() {
+  console.log('Server running at http://127.0.0.1:'+ port + '/');
+});
+/*************************
+ * SETUP SOCKET.IO
+ *************************/
+var io = require('socket.io')(server);
+var svrSocket = require('./lib/svrSocket.js');
+svrSocket.init(io);
+
+/********************************
+ * SETUP REDIS DB (scrumblr db)
+ ********************************/
+var db = new data(function() {});
+
+/*************************
+ * SETUP REDMINE REST API
+ *************************/
+var redmine = new Redmine({
+	host: REDMINE_HOST,
+	apiKey: REDMINE_APIKEY
+});
+svrSocket.setRedmine(redmine);
+//var rStaticInfo = new rStaticInfo(redmine);
+
+/*************************
+ * ROUTES
+ *************************/
+app.get('/', loginRequired, function(req, res) {
+
+  async.series({
+	projects : function(callback) {
+	  redmine.getProjects()
+		.success(function(result) {
+		  callback(null, result.projects);
+		});
+	}
+  }, function(err, results) {
+	var url = req.header('host');
+	var connected = io.sockets.connected;
+	clientsCount = Object.keys(connected).length;
+
+	res.render('home', {
+	  url: url,
+	  connected: clientsCount,
+	  projects: results.projects
+
+	  // 만약 view 에서 var arr = <%- projects %> 쓸때는 아래처럼
+	  //projects: JSON.stringify(results.projects)
+	});
+  });
+
+});
+
+app.get('/login', function(req, res) {
+  var remember = req.signedCookies.remember;
+  var id = req.signedCookies.userid;
+  var pw = req.signedCookies.userpw;
+  res.render('login', {
+	remember: remember,
+	id: id,
+	pw: pw
+  });
+});
+
+app.get('/logout', function(req, res) {
+  req.session.destroy();
+  res.clearCookie('userid');
+  res.clearCookie('userpw');
+  res.clearCookie('remember');
+  //res.render('logout');
+  return res.redirect('/');
+});
+
+app.get('/:id', loginRequired, function(req, res){
+  async.waterfall([
+	/* 1. 프로젝트 리스트 추출
+	 *    : 프로젝트 리스트를 가져온다. */
+	function(callback) {
+	  redmine.getProjects()
+		.success(function(result) {
+		  callback(null, result.projects);
+		});
+	},
+	/* 2. 이슈 리스트 추출
+	 *    : 프로젝트 리스트 중에서 현재 화면의 프로젝트 아이디를 추출하고
+	 * 	  프로젝트 아이디를 통해서 프로젝트에 속한 이슈들을 추출한다.  */
+	function(projects, callback) {
+	  var pj_id = -1;
+	  var req_id = req.params.id;
+	  for (var i = 0, len = projects.length ; i < len ; i++) {
+		if(projects[i].identifier === req_id){
+		  pj_id = projects[i].id;
+		}
+	  }
+
+	  if (pj_id != -1) {
+		redmine.getIssues({project_id: pj_id})
+			.success(function(result) {
+			  callback(null, pj_id, projects, result.issues);
+			});
+	  } else {
+		console.log('fail to get project_id');
+		callback(null, pj_id, projects, null);
+	  }
+	},
+	/* 3. 카드로 만들어질 이슈 추출
+	 *    : 스크럼블 redis 에 접속하여 카드들 목록을 가져온 후에 
+	 *      현재 이슈들과 비교하여 추가될 카드 이슈들을 추출한다.*/
+	function(pj_id, projects, issues, callback) {
+	  if(issues == null) {
+		callback(null, pj_id, projects, null);
+	  } else {
+		db.getAllCards(req.path, function(cards) {
+		  var addIssues = [];
+
+		  for (var i = 0 , len1 = issues.length ; i < len1 ; i++) {
+			var issueId = issues[i].id; 
+			var subject = issues[i].subject; 
+			var status = issues[i].status.name;
+			var save = true;
+
+			if (status == "해결") {
+			  //console.log("SKIP : " + subject + ", status : " + status);
+			  continue;
+			}
+
+			for (var j = 0 , len2 = cards.length ; j < len2 ; j++) {
+			  if (("issue" + issueId) == cards[j].id) {
+				save = false;
+				//console.log('SKIP : subject = ' + subject + ', card = ' + cards[j].text);
+			  }
+			}
+
+			if (save) {
+			  addIssues.push({issueId:issueId, subject:subject})
+			}
+		  }
+
+		  console.log(addIssues);
+		  callback(null, pj_id, projects, addIssues);
+		});
+
+	  }
+	}, 
+	function(pj_id, projects, addIssues, callback) {
+	  var sessionId = req.session.username;
+	  var userInfo = rStaticInfo.getRedmineUsers();
+	  //var userInfo = rStaticInfo.getUserInfo(sessionId);
+	  console.log(pj_id);
+	  console.log(userInfo);
+	  callback(null, projects, addIssues);
+	}
+  ], function(err, projects, addIssues) {
+	  res.render('board', {
+		pageId: req.params.id,
+		projects: projects,
+	    addIssues: JSON.stringify(addIssues)
+	  });
+  });
+});
+
+app.post('/login', function(req, res) {
+  var id = req.body.username;
+  var pw = req.body.password;
+  var remember = req.body.remember;
+
+  var ldap = new ldapAuth({
+	  url: LDAP_URL,
+	  searchBase: LDAP_BASE,
+	  searchFilter: "(uid={{username}})",
+	  retry: 3,
+	  adminDn: LDAP_ADMIN_DN,
+	  adminPassword: LDAP_ADMIN_PW
+  });
+
+  ldap.authenticate(id, pw, function(err, success) {
+
+	if (err) {
+	  console.error('Error in ldap authenticate : ' + err);
+
+	  res.render('login', {
+		error: 'login error'
+	  });
+	}
+	else if (id && pw && success) {
+	  req.session.username = id;
+	  if (remember === 'true') {
+		res.cookie('userid', id, { signed: true, httpOnly: true });
+		res.cookie('userpw', pw, { signed: true, httpOnly: true });
+		res.cookie('remember', remember, { signed: true, httpOnly: true });
+	  } else {
+		res.clearCookie('userid');
+		res.clearCookie('userpw');
+		res.clearCookie('remember');
+	  }
+
+	  return res.redirect(req.query.next || '/');
+
+	} else {
+	  return res.redirect('back');
+	}
+  });
+});
+
+
+/*************************
+ * FUNCTIONS
+ *************************/
+function loginRequired(req, res, next) {
+  if (req.session && req.session.username) {
+	next();
+  } else {
+	res.redirect('login?next=' + req.url);
+  }
+}
+

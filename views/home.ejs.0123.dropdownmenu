@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+  <head>
+	<!-- SCRIPTS -->
+    <link rel='stylesheet' href='/css/style.css' />
+    <link rel='stylesheet' href='/css/bootstrap.min.css' />
+
+	<!-- FONTS -->
+	<link href='http://fonts.googleapis.com/css?family=Rock+Salt' rel='stylesheet' type='text/css'>
+	<link href='http://fonts.googleapis.com/css?family=Covered+By+Your+Grace' rel='stylesheet' type='text/css'>
+
+    <title>scrumblr</title>
+  </head>
+  <body>
+	<nav class="navbar navbar-inverse" role="navigation">
+	  <div class="navbar-header">
+		<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+		  <span class="sr-only">Toggle navigation</span>
+		  <span class="icon-bar"></span>
+		  <span class="icon-bar"></span>
+		  <span class="icon-bar"></span>
+		</button>
+		<a class="navbar-brand" href="#">UST21</a>
+	  </div>
+
+	  <div class="collapse navbar-collapse navbar-ex1-collapse">
+		<ul class="nav navbar-nav">
+		  <li class="active"><a href="#">Home</a></li>
+		  <li class="dropdown">
+			<a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <b class="caret"></b></a>
+			<ul class="dropdown-menu">
+			  <li><a href="#">Action</a></li>
+			  <li><a href="#">Another action</a></li>
+			  <li><a href="#">Something else here</a></li>
+			  <li><a href="#">Separated link</a></li>
+			  <li><a href="#">One more separated link</a></li>
+			</ul>
+		  </li>
+		</ul>
+		<ul class="nav navbar-nav navbar-right">
+		  <li><a href="#">Link</a></li>
+		  <li class="dropdown">
+			<a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <b class="caret"></b></a>
+			<ul class="dropdown-menu">
+			  <li><a href="#">Action</a></li>
+			  <li><a href="#">Another action</a></li>
+			  <li><a href="#">Something else here</a></li>
+			  <li><a href="#">Separated link</a></li>
+			</ul>
+		  </li>
+		</ul>
+	  </div><!-- /.navbar-collapse -->
+	</nav>
+  </nav>
+
+  <div class="board-outline">
+	<div id="board">
+	  <div id="board-doodles"></div>
+	  <table id="board-table" class="board-table">
+		<tr>
+		  <td>
+			<h1 class="home">UST21 scrumblr</h1>
+			<form class="home" onsubmit="return go();">
+			  <label>name your project</label>
+			  <br>
+			  <input class="text" type="text" name="name">
+			  <a id="go" onclick="return go();">&nbsp;go.</a>
+			  </input>
+			</form>
+		  </td>
+		</tr>
+	  </table>
+	</div>
+  </div>
+  <div class="home-connections">connections: <%=connected %></div>
+  <!--
+  <div class="stickers">
+	<div class="sticker" id="sticker-red"></div>
+	<div class="sticker" id="sticker-blue"></div>
+	<div class="sticker" id="sticker-yellow"></div>
+	<div class="sticker" id="sticker-green"></div>
+	<br>
+	<div class="sticker" id="sticker-pink"></div>
+	<div class="sticker" id="sticker-lightblue"></div>
+	<div class="sticker" id="sticker-orange"></div>
+	<div class="sticker" id="sticker-purple"></div>
+	<br>
+	<div class="sticker" id="sticker-gold"></div>
+	<div class="sticker" id="sticker-bluestar"></div>
+	<div class="sticker" id="sticker-silverstar"></div>
+	<div class="sticker" id="sticker-redstar"></div>
+  </div>
+  -->
+  <script src="/js/jquery-2.1.0.min.js"></script>
+  <script src="/js/bootstrap.min.js"></script>
+  <script type="text/javascript">
+	function go() {
+	  var value = document.forms[0].elements["name"].value; 
+	  value = escape(value); 
+	  window.location.href = value; 
+	  return false;
+	}
+	</script>
+  </body>
+</html>

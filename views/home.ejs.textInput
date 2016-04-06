@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+	<title>scrumblr</title>
+	<!-- SCRIPTS -->
+    <link rel='stylesheet' href='/css/style.css' />
+    <link rel='stylesheet' href='/css/bootstrap.min.css' />
+	<script src="/js/jquery-2.1.0.min.js"></script>
+	<script src="/js/bootstrap.min.js"></script>
+	<!-- FONTS -->
+	<link href='http://fonts.googleapis.com/css?family=Rock+Salt' rel='stylesheet' type='text/css'>
+	<link href='http://fonts.googleapis.com/css?family=Covered+By+Your+Grace' rel='stylesheet' type='text/css'>
+
+	<script type="text/javascript">
+	  /*
+	  var arr = <%- projects %>;
+	  console.log(arr);
+	  */
+	</script>
+
+  </head>
+  <body>
+	<nav class="navbar navbar-inverse" role="navigation">
+	  <div class="navbar-header">
+		<a class="navbar-brand" href="/">UST21</a>
+	  </div>
+
+	  <div class="collapse navbar-collapse navbar-menu">
+		<ul class="nav navbar-nav">
+		  <li class="active"><a href="/">Home</a></li>
+
+		  <% if (locals.projects) { %>
+		  <li class="dropdown">
+			<a href="#" class="dropdown-toggle" data-toggle="dropdown">Projects<b class="caret"></b></a>
+			<ul class="dropdown-menu">
+			  <% for (var i = 0 ; i < projects.length ; i++) { %>
+			  <li><a href="/<%= projects[i].identifier %>"><%= projects[i].identifier %></a><li>
+			  <% } %>
+			</ul>
+		  </li>
+		  <% } %>
+
+		</ul>
+		<ul class="nav navbar-nav navbar-right">
+		  <li><a id='logout' href="/logout">Logout</a></li>
+		</ul>
+	  </div><!-- /.navbar-collapse -->
+	</nav>
+
+	<div class="board-outline">
+	  <div id="board">
+		<div id="board-doodles"></div>
+		<table id="board-table" class="board-table">
+		  <tr>
+			<td>
+			  <h1 class="home">UST21 scrumblr</h1>
+			  <form class="home" onsubmit="return go();">
+				<label>select your project</label>
+				<br>
+				<input class="text" type="text" name="name">
+				<a id="go" onclick="return go();">&nbsp;go.</a>
+				</input>
+			  </form>
+			</td>
+		  </tr>
+		</table>
+	  </div>
+	</div>
+	<div class="home-connections">connections: <%=connected %></div>
+	<script type="text/javascript">
+	  function go() {
+		var value = document.forms[0].elements["name"].value; 
+		value = escape(value); 
+		window.location.href = value; 
+		return false;
+	  }
+	</script>
+  </body>
+</html>

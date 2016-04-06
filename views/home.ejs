@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+  <head>
+	<title>scrumblr</title>
+	<!-- SCRIPTS -->
+    <link rel='stylesheet' href='/css/style.css' />
+    <link rel='stylesheet' href='/css/bootstrap.min.css' />
+	<script src="/js/jquery-2.1.0.min.js"></script>
+	<script src="/js/bootstrap.min.js"></script>
+	<!-- FONTS -->
+	<link href='http://fonts.googleapis.com/css?family=Rock+Salt' rel='stylesheet' type='text/css'>
+	<link href='http://fonts.googleapis.com/css?family=Covered+By+Your+Grace' rel='stylesheet' type='text/css'>
+  </head>
+  <body>
+	<nav class="navbar navbar-inverse" role="navigation">
+	  <div class="navbar-header">
+		<div class="navbar-brand">UST21</div>
+	  </div>
+
+	  <div class="collapse navbar-collapse navbar-menu">
+		<ul class="nav navbar-nav">
+		  <li class="active"><a href="/">Home</a></li>
+
+		  <% if (locals.projects) { %>
+		  <li class="dropdown">
+			<a href="#" class="dropdown-toggle" data-toggle="dropdown">Projects<b class="caret"></b></a>
+			<ul class="dropdown-menu">
+			  <% for (var i = 0 ; i < projects.length ; i++) { %>
+			  <li><a href="/<%= projects[i].identifier %>"><%= projects[i].identifier %></a><li>
+			  <% } %>
+			</ul>
+		  </li>
+		  <% } %>
+
+		</ul>
+		<ul class="nav navbar-nav navbar-right">
+		  <li><a id='logout' href="/logout">Logout</a></li>
+		</ul>
+	  </div><!-- /.navbar-collapse -->
+	</nav>
+
+	<div class="board-outline center-div">
+	  <div id="board">
+		<div id="board-doodles"></div>
+		<table id="board-table" class="board-table">
+		  <tr>
+			<td>
+			  <h1 class="home">UST21 scrumblr</h1>
+			  <br>
+			  <form class="home" onsubmit="return go();">
+				<label>select your project</label>
+				<br>
+
+		<% if (locals.projects) { %>
+				<select class="form-control" id="sel1" >
+		<% for (var i = 0 ; i < projects.length ; i++) { %>
+					<option><%= projects[i].identifier %></a></option>
+		<% } %>
+				</select>
+				<a id="go" onclick="return goSel();">&nbsp;go</a>
+		<% } else { %>
+				<input class="text" type="text" name="name">
+				<a id="go" onclick="return go();">&nbsp;go</a>
+		<% } %>
+
+			  </form>
+			</td>
+		  </tr>
+		</table>
+	  </div>
+	  <div class="home-connections">connections: <%=connected %></div>
+	</div>
+	<script type="text/javascript">
+	  function goSel() {
+		window.location.href = $('#sel1').val();
+	  }
+
+	  function go() {
+		var value = document.forms[0].elements["name"].value; 
+		value = escape(value); 
+		window.location.href = value; 
+		return false;
+	  }
+	</script>
+  </body>
+</html>

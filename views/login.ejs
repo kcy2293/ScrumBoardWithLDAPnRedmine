@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>scrumblr</title>
+
+	<!-- SCRIPTS -->
+    <link rel='stylesheet' href='/css/style.css' />
+    <link rel='stylesheet' href='/css/bootstrap.min.css' />
+	<link rel="stylesheet" href="/css/spinner.css" />
+  </head>
+  <body>
+	<div class="container">
+	  <form class="form-signin" method="post">
+
+		<% if(locals.error) { %>
+		<div class="loginError" id="loginError">잘못된 계정 또는 비밀번호</div>
+		<% } %>
+
+		<h2 class="form-signin-heading">Please sign in</h2>
+		<label for="inputId" class="sr-only">User ID</label>
+		<input type="text" id="username" name="username" class="form-control" placeholder="ID를 입력하세요" required autofocus>
+		<label for="inputPassword" class="sr-only">Password</label>
+		<input type="password" id="password" name="password" class="form-control" placeholder="PW를 입력하세요" required>
+		<div class="checkbox">
+		  <label>
+			<input type="checkbox" id="remember" name="remember" value="true"> Remember me
+		  </label>
+		</div>
+		<button id="sign" class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+	  </form>
+	</div> <!-- /container -->
+	<script src="/js/jquery-2.1.0.min.js"></script>
+	<script type="text/javascript">
+	  $('#sign').click(function() {
+		$('input').blur();
+		$('body').append('<div id="processing"><div class="spinner"></div></div>');
+	  });
+
+	  $(document).keyup(function(e) {
+		if (e.keyCode == 27) { 
+		  $('#processing').remove();
+		}
+	  });
+
+	  <% if(locals.remember) { %>
+		if ('<%= remember %>' === 'true') {
+		  $('#username').val('<%= id %>');
+		  $('#password').val('<%= pw %>');
+		  $('#remember').prop('checked', true);
+		  $('#username').removeAttr('autofocus');
+		  $('#sign').trigger('click');
+		}
+	  <% } %>
+	</script>
+  </body>
+</html>
